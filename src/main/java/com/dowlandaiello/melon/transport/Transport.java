@@ -32,18 +32,6 @@ public interface Transport {
     }
 
     /**
-     * A generic upgrade to a particular transport.
-     */
-    public interface Upgrade {
-        /**
-         * Applies a particular upgrade to a transport.
-         * 
-         * @param transport the transport to apply the upgrade to
-         */
-        public void apply(Transport transport);
-    }
-
-    /**
      * Applies a particular upgrade to a transport.
      * 
      * @param upgrade the upgrade to apply to the transport
@@ -67,6 +55,6 @@ public interface Transport {
      * @param address the address of the peer to dial
      * @return the connected socket
      */
-    public Socket dial(String address)
-            throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException, UnsupportedTransportException;
+    public Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
+            UnsupportedTransportException, ClassNotFoundException;
 }

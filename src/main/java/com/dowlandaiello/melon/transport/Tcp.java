@@ -4,10 +4,17 @@
 package com.dowlandaiello.melon.transport;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.dowlandaiello.melon.common.CommonTypes;
+import com.dowlandaiello.melon.common.CommonTypes.Message;
+import com.dowlandaiello.melon.transport.Upgrade.UpgradeSet;
 
 /**
  * Represents an upgradable tcp transport.
@@ -24,10 +31,11 @@ public class Tcp implements Transport {
     /**
      * The upgrades to use.
      */
-    private ArrayList<Upgrade> upgrades;
+    private Map<Upgrade.Type, Upgrade> upgrades;
 
     public Tcp() {
         this.fallbackTransport = null; // No fallback transports
+        this.upgrades = new HashMap<Upgrade.Type, Upgrade>(); // Initialize upgrades map
     }
 
     /**
@@ -37,7 +45,7 @@ public class Tcp implements Transport {
      * @return the upgraded transport
      */
     public Transport withUpgrade(Upgrade upgrade) {
-        this.upgrades.add(upgrade); // Add upgrade
+        this.upgrades.put(upgrade.getType(), upgrade); // Add upgrade
 
         return this; // Allow chaining of withUpgrade statements
     }
@@ -70,8 +78,8 @@ public class Tcp implements Transport {
      * @param address the address of the peer to dial
      * @return the connected socket
      */
-    public Socket dial(String address)
-            throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException, UnsupportedTransportException {
+    public Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
+            UnsupportedTransportException, ClassNotFoundException {
         // Check multiAddr invalid
         if (!CommonTypes.MultiAddress.isValid(address)) {
             // Throw exception
@@ -97,6 +105,50 @@ public class Tcp implements Transport {
             return this.fallbackTransport.dial(address); // Try dialing with fallback
         }
 
-        return new Socket(inetAddress, port); // Connect
+        // Initialize upgrade set for negotiation
+        UpgradeSet upgrades = new UpgradeSet(
+                new ArrayList<Upgrade>(Arrays.asList((Upgrade[]) this.upgrades.values().toArray())));
+
+        // Initialize a negotiation message
+        Message availableUpgradesMessage = new Message(upgrades, Message.Type.NEGOTIATION);
+
+        Socket baseSocket = new Socket(inetAddress, port); // Connect without upgrading
+        ObjectOutputStream outStream = new ObjectOutputStream(baseSocket.getOutputStream()); // Get output stream
+        ObjectInputStream inStream = new ObjectInputStream(baseSocket.getInputStream()); // Get input stream
+
+        outStream.writeObject(availableUpgradesMessage); // Write to connection
+
+        Message response = (Message) inStream.readObject(); // Read an incoming message
+
+        // Check is negotiation
+        if (response.type == Message.Type.NEGOTIATION) {
+            // Cast message contents to upgrade set (the connected peer's supported
+            // upgrades)
+            ArrayList<Upgrade> peerSupportedUpgrades = ((UpgradeSet) response.contents).upgrades;
+
+            ArrayList<Upgrade> usableUpgrades = new ArrayList<Upgrade>(); // Initialize usable upgrades list
+
+            // Iterate through upgrades
+            for (int i = 0; i < peerSupportedUpgrades.size(); i++) {
+                // Iterate through locally supported upgrades
+                for (int x = 0; x < upgrades.upgrades.size(); x++) {
+                    // Check both supported
+                    if (upgrades.upgrades.get(x).getType() == peerSupportedUpgrades.get(i).getType()) {
+                        usableUpgrades.set(usableUpgrades.size(), upgrades.upgrades.get(x)); // Add upgrade to usable
+                                                                                             // upgrades list
+
+                        break; // Break
+                    }
+                }
+            }
+
+            baseSocket.close(); // Close the base socket
+
+            Socket finalSocket = new Socket(inetAddress, port); // Connect
+
+            return finalSocket; // Return final socket
+        } else {
+            return baseSocket; // Nothing to negotiate
+        }
     }
 }

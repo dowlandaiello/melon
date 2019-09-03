@@ -3,12 +3,64 @@
  */
 package com.dowlandaiello.melon.common;
 
+import java.io.Serializable;
+
 import org.apache.commons.validator.routines.InetAddressValidator;
 
 /**
  * Represents an implementation of some common types and helper methods.
  */
 public class CommonTypes {
+    /**
+     * Represents a message between peers.
+     */
+    public static class Message implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * Represents a message type.
+         */
+        public enum Type {
+            NEGOTIATION,
+        }
+
+        /**
+         * The contents of the message.
+         */
+        public final Object contents;
+
+        /**
+         * The contents of the message (optional).
+         */
+        public final byte[] bytes;
+
+        /**
+         * The type of the message.
+         */
+        public final Type type;
+
+        /**
+         * Initializes a new message.
+         * 
+         * @param contents the contents of the message
+         * @param type     the type of the message
+         */
+        public Message(Object contents, Type type) {
+            this.contents = contents; // Set contents
+            this.bytes = null; // Set bytes
+            this.type = type; // Set message type
+        }
+
+        /**
+         * Initializes a new message.
+         */
+        public Message(byte[] contents, Type type) {
+            this.contents = null; // Set contents to null, since we aren't sending any objects in this message
+            this.bytes = contents; // Set bytes
+            this.type = type; // Set message type
+        }
+    }
+
     /**
      * Represents an IPFS-style MultiAddress.
      */
