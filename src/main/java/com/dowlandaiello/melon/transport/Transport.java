@@ -4,9 +4,9 @@
 package com.dowlandaiello.melon.transport;
 
 import java.io.IOException;
-import java.net.Socket;
 
 import com.dowlandaiello.melon.common.CommonTypes;
+import com.dowlandaiello.melon.transport.connection.Connection;
 
 /**
  * Represents a generic, upgradable transport.

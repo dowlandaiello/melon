@@ -1,9 +1,13 @@
 /**
- * Implements a set of upgradable, generic network transports.
+ * Implements a set of upgradable, generic connection types.
  */
-package com.dowlandaiello.melon.transport;
+package com.dowlandaiello.melon.transport.connection;
 
 import java.io.IOException;
+import java.io.Serializable;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 /**
  * Represents a generic transport connection.
@@ -49,7 +53,7 @@ public interface Connection {
      * @param obj the object to write
      * @throws IOException
      */
-    public void writeObject(Object ojb) throws IOException;
+    public void writeObject(Serializable obj) throws IOException, IllegalBlockSizeException;
 
     /**
      * Reads an object from the connection.
@@ -58,7 +62,8 @@ public interface Connection {
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    public Object readObject() throws IOException, ClassNotFoundException;
+    public Object readObject()
+            throws IOException, ClassNotFoundException, IllegalBlockSizeException, BadPaddingException;
 
     /**
      * Flushes the connection.

@@ -52,11 +52,14 @@ public interface Upgrade extends Serializable {
     public Type getType();
 
     /**
-     * Gets the respective config of an upgrade.
+     * Gets the respective config of an upgrade for a particular transport
+     * direction.
      * 
+     * @param transportDirection the "direction" of communication to get a config
+     *                           for (accepted values: "any", "in", "out")
      * @return the upgrade's configuration
      */
-    public <T> T getConfig();
+    public <T> T getConfig(String transportDirection);
 
     /**
      * Converts the upgrade to a string.

@@ -15,6 +15,8 @@ import java.util.Map;
 import com.dowlandaiello.melon.common.CommonTypes;
 import com.dowlandaiello.melon.common.CommonTypes.Message;
 import com.dowlandaiello.melon.transport.Upgrade.UpgradeSet;
+import com.dowlandaiello.melon.transport.connection.Connection;
+import com.dowlandaiello.melon.transport.connection.TcpSocket;
 
 /**
  * Represents an upgradable tcp transport.
@@ -126,7 +128,8 @@ public class Tcp implements Transport {
             // upgrades)
             ArrayList<Upgrade> peerSupportedUpgrades = ((UpgradeSet) response.contents).upgrades;
 
-            ArrayList<Upgrade> usableUpgrades = new ArrayList<Upgrade>(); // Initialize usable upgrades list
+            // Initialize usable upgrades map
+            HashMap<Upgrade.Type, Upgrade> usableUpgrades = new HashMap<Upgrade.Type, Upgrade>();
 
             // Iterate through upgrades
             for (int i = 0; i < peerSupportedUpgrades.size(); i++) {
@@ -134,8 +137,8 @@ public class Tcp implements Transport {
                 for (int x = 0; x < upgrades.upgrades.size(); x++) {
                     // Check both supported
                     if (upgrades.upgrades.get(x).getType() == peerSupportedUpgrades.get(i).getType()) {
-                        usableUpgrades.set(usableUpgrades.size(), upgrades.upgrades.get(x)); // Add upgrade to usable
-                                                                                             // upgrades list
+                        // Add upgrade to usable upgrades list
+                        usableUpgrades.put(upgrades.upgrades.get(x).getType(), upgrades.upgrades.get(x));
 
                         break; // Break
                     }
@@ -146,9 +149,9 @@ public class Tcp implements Transport {
 
             Socket finalSocket = new Socket(inetAddress, port); // Connect
 
-            return finalSocket; // Return final socket
+            return new TcpSocket(finalSocket, usableUpgrades); // Return final socket
         } else {
-            return baseSocket; // Nothing to negotiate
+            return new TcpSocket(baseSocket, null); // Nothing to negotiate
         }
     }
 }
