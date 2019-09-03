@@ -5,6 +5,7 @@ package com.dowlandaiello.melon.transport;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import com.dowlandaiello.melon.common.CommonTypes;
 
@@ -20,6 +21,11 @@ public class Tcp implements Transport {
      */
     private Transport fallbackTransport;
 
+    /**
+     * The upgrades to use.
+     */
+    private ArrayList<Upgrade> upgrades;
+
     public Tcp() {
         this.fallbackTransport = null; // No fallback transports
     }
@@ -31,7 +37,7 @@ public class Tcp implements Transport {
      * @return the upgraded transport
      */
     public Transport withUpgrade(Upgrade upgrade) {
-        upgrade.apply(this); // Apply upgrade
+        this.upgrades.add(upgrade); // Add upgrade
 
         return this; // Allow chaining of withUpgrade statements
     }
