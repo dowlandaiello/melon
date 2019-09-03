@@ -40,6 +40,13 @@
       <version>1.4.0</version>
     </dependency>
 
+    <!-- Apache Commons Lang -->
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.6</version>
+    </dependency>
+
     <!-- EC Keypair Generation -->
     <dependency>
       <groupId>org.web3j</groupId>
