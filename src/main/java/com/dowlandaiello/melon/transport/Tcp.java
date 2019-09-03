@@ -87,6 +87,8 @@ public class Tcp implements Transport {
                 throw new UnsupportedTransportException(
                         String.format("attempted to dial a peer using an unsupported transport (%s)", transport)); // Throw
             }
+
+            return this.fallbackTransport.dial(address); // Try dialing with fallback
         }
 
         return new Socket(inetAddress, port); // Connect
