@@ -47,13 +47,6 @@
       <version>2.6</version>
     </dependency>
 
-    <!-- EC Keypair Generation -->
-    <dependency>
-      <groupId>org.web3j</groupId>
-      <artifactId>core</artifactId>
-      <version>4.1.1</version>
-    </dependency>
-
     <!-- SHA3 Hashing via Bouncycastle -->
     <dependency>
       <groupId>org.bouncycastle</groupId>
