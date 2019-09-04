@@ -5,13 +5,14 @@
 package com.dowlandaiello.melon.host;
 
 import java.security.InvalidAlgorithmParameterException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.spec.ECGenParameterSpec;
 
 import com.dowlandaiello.melon.crypto.Hash;
-
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Keys;
 
 /**
  * Represents a local melon peer. Serves as a wrapper for core melon
@@ -44,7 +45,7 @@ public class Host {
     /**
      * The keypair used to derive the peerId of the host.
      */
-    ECKeyPair keypair;
+    KeyPair keypair;
 
     /**
      * Initializes a new host, and applies all of the given options.
@@ -56,8 +57,11 @@ public class Host {
      */
     public Host(Option... opts)
             throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
-        this.keypair = Keys.createEcKeyPair(); // Create keypair
-        this.peerId = Hash.sha3(keypair.getPublicKey().toByteArray()); // Hash public key
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("EC"); // Initialize keypair generator
+        generator.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom()); // Initialize keypair gen
+
+        this.keypair = generator.generateKeyPair(); // Create keypair
+        this.peerId = Hash.sha3(this.keypair.getPublic().getEncoded()); // Hash public key
 
         // Iterate through provided options
         for (int i = 0; i < opts.length; i++) {

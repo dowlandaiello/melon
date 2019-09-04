@@ -87,8 +87,8 @@ public class TcpSocket implements Connection {
 
         // Check no secio support
         if (secio != null) {
-            Cipher cipherOut = secio.getConfig("out"); // Get outbound cipher
-            Cipher cipherIn = secio.getConfig("in"); // Get inbound cipher
+            Cipher cipherOut = (Cipher) secio.getConfig("out"); // Get outbound cipher
+            Cipher cipherIn = (Cipher) secio.getConfig("in"); // Get inbound cipher
 
             // Set cipher streams
             this.cipherOutStream = new CipherOutputStream(socket.getOutputStream(), cipherOut);

@@ -59,7 +59,7 @@ public interface Upgrade extends Serializable {
      *                           for (accepted values: "any", "in", "out")
      * @return the upgrade's configuration
      */
-    public <T> T getConfig(String transportDirection);
+    public Object getConfig(String transportDirection);
 
     /**
      * Converts the upgrade to a string.
@@ -67,11 +67,4 @@ public interface Upgrade extends Serializable {
      * @return the string representation of the upgrade
      */
     public String toString();
-
-    /**
-     * Converts the upgrade to a byte array.
-     * 
-     * @return the byte array representation of the upgrade
-     */
-    public byte[] toByteArray();
 }
