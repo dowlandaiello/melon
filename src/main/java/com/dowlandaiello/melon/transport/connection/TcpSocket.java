@@ -10,6 +10,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
 import javax.crypto.BadPaddingException;
@@ -17,9 +20,11 @@ import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SealedObject;
 
 import com.dowlandaiello.melon.transport.Upgrade;
+import com.dowlandaiello.melon.transport.secio.Secio;
 
 /**
  * Represents an upgradable TCP connection.
@@ -75,22 +80,32 @@ public class TcpSocket implements Connection {
 
     /**
      * Initializes a new Tcp connection with a given socket and upgrade set.
+     * 
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
      */
-    public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades) throws IOException {
+    public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Key peerPublicKey)
+            throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         this.socket = socket; // Set socket
         this.dataOutStream = new DataOutputStream(socket.getOutputStream()); // Set data output stream
         this.dataInStream = new DataInputStream(socket.getInputStream()); // Set data input stream
         this.objOutStream = new ObjectOutputStream(socket.getOutputStream()); // Set object output stream
         this.objInStream = new ObjectInputStream(socket.getInputStream()); // Set object input stream
 
-        Upgrade secio = upgrades.get(Upgrade.Type.SECIO); // Get secio upgrade
+        Secio secio = (Secio) upgrades.get(Upgrade.Type.SECIO); // Get secio upgrade
 
         // Check no secio support
         if (secio != null) {
-            Cipher cipherOut = (Cipher) secio.getConfig("out"); // Get outbound cipher
-            Cipher cipherIn = (Cipher) secio.getConfig("in"); // Get inbound cipher
+            // Get the inbound cipher instance
+            Cipher cipherIn = Cipher.getInstance("AES/ECB/PKCS5Padding"); // Get cipher instance
+            cipherIn.init(Cipher.DECRYPT_MODE, peerPublicKey); // Initialize cipher
 
-            // Set cipher streams
+            secio.registerPeerCipher(socket.getRemoteSocketAddress().toString(), cipherIn); // Register the cipher
+
+            Cipher cipherOut = (Cipher) secio.getConfig("127.0.0.1"); // Get outbound cipher
+
+            // Set cipher streams`
             this.cipherOutStream = new CipherOutputStream(socket.getOutputStream(), cipherOut);
             this.cipherInStream = new CipherInputStream(socket.getInputStream(), cipherIn);
 

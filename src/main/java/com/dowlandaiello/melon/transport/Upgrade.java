@@ -55,11 +55,11 @@ public interface Upgrade extends Serializable {
      * Gets the respective config of an upgrade for a particular transport
      * direction.
      * 
-     * @param transportDirection the "direction" of communication to get a config
-     *                           for (accepted values: "any", "in", "out")
+     * @param transportDirection remote peer address to get a configuration for
+     *                           (i.e. "127.0.0.1:3003"/"any.remote.address"")
      * @return the upgrade's configuration
      */
-    public Object getConfig(String transportDirection);
+    public Object getConfig(String address);
 
     /**
      * Converts the upgrade to a string.

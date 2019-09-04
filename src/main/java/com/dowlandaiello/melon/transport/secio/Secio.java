@@ -4,9 +4,10 @@
 package com.dowlandaiello.melon.transport.secio;
 
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
@@ -28,20 +29,24 @@ public class Secio implements Upgrade {
     private final Cipher cipherOut;
 
     /**
-     * The cipher instance used for inbound communications.
+     * The cipher instances used for inbound connections.
      */
-    private final Cipher cipherIn;
+    private Map<String, Cipher> cipherIn;
 
-    public Secio(KeyPair senderKeypair, Key recipientPublicKey)
-            throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
+    public Secio(KeyPair senderKeypair) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         Cipher cipherOut = Cipher.getInstance("AES/ECB/PKCS5Padding"); // Get cipher instance
-        Cipher cipherIn = Cipher.getInstance("AES/ECB/PKCS5Padding"); // Get cipher instance
 
         cipherOut.init(Cipher.ENCRYPT_MODE, senderKeypair.getPrivate()); // Initialize cipher
-        cipherIn.init(Cipher.DECRYPT_MODE, recipientPublicKey); // Initialize cipher
 
         this.cipherOut = cipherOut; // Set cipher out
-        this.cipherIn = cipherIn; // Set cipher in
+        this.cipherIn = new HashMap<String, Cipher>(); // Set cipher in
+    }
+
+    /**
+     * Registers a new cipher instance for the specified peer.
+     */
+    public void registerPeerCipher(String address, Cipher cipher) {
+        this.cipherIn.put(address, cipher); // Add cipher to map of ciphers
     }
 
     /**
@@ -61,15 +66,13 @@ public class Secio implements Upgrade {
      *                           for (accepted values: "any", "in", "out")
      * @return the upgrade's configuration
      */
-    public Object getConfig(String transportDirection) {
-        switch (transportDirection) {
-        case "in":
-            return this.cipherIn;
-        case "out":
-            return this.cipherOut;
-        default:
-            return this.cipherOut;
+    public Object getConfig(String address) {
+        // Check is localhost
+        if (address.contains("127.0.0.1")) {
+            return this.cipherOut; // Return cipher used for outbound communications
         }
+
+        return this.cipherIn.get(address); // Return cipher used for communication with specified address
     }
 
     /**
