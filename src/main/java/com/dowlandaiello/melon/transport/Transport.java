@@ -4,9 +4,16 @@
 package com.dowlandaiello.melon.transport;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+
+import javax.crypto.NoSuchPaddingException;
 
 import com.dowlandaiello.melon.common.CommonTypes;
 import com.dowlandaiello.melon.transport.connection.Connection;
+
+import org.apache.commons.codec.DecoderException;
 
 /**
  * Represents a generic, upgradable transport.
@@ -54,7 +61,10 @@ public interface Transport {
      * 
      * @param address the address of the peer to dial
      * @return the connected socket
+     * @throws DecoderException
+     * @throws InvalidKeySpecException
      */
     public Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
-            UnsupportedTransportException, ClassNotFoundException;
+            UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
+            NoSuchPaddingException, DecoderException, InvalidKeySpecException;
 }

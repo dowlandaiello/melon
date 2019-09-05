@@ -7,17 +7,24 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.security.Key;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.crypto.NoSuchPaddingException;
 
 import com.dowlandaiello.melon.common.CommonTypes;
 import com.dowlandaiello.melon.common.CommonTypes.Message;
 import com.dowlandaiello.melon.transport.Upgrade.UpgradeSet;
 import com.dowlandaiello.melon.transport.connection.Connection;
 import com.dowlandaiello.melon.transport.connection.TcpSocket;
+
+import org.apache.commons.codec.DecoderException;
 
 /**
  * Represents an upgradable tcp transport.
@@ -80,9 +87,15 @@ public class Tcp implements Transport {
      * 
      * @param address the address of the peer to dial
      * @return the connected socket
+     * @throws NoSuchPaddingException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     * @throws DecoderException
+     * @throws InvalidKeySpecException
      */
     public Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
-            UnsupportedTransportException, ClassNotFoundException {
+            UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
+            NoSuchPaddingException, DecoderException, InvalidKeySpecException {
         // Check multiAddr invalid
         if (!CommonTypes.MultiAddress.isValid(address)) {
             // Throw exception
@@ -90,11 +103,13 @@ public class Tcp implements Transport {
                     "attempted to dial improperly formatted address");
         }
 
-        // Parse the desired connection transport, address, and port so we can check for
+        // Parse the desired connection transport, address, pub key, and port so we can
+        // check for
         // compatibility
         String transport = CommonTypes.MultiAddress.parseTransport(address);
         String inetAddress = CommonTypes.MultiAddress.parseInetAddress(address);
         int port = CommonTypes.MultiAddress.parsePort(address);
+        PublicKey peerPublicKey = CommonTypes.MultiAddress.parsePublicKey(address);
 
         // Check is not using tcp
         if (transport != "tcp") {
@@ -150,9 +165,9 @@ public class Tcp implements Transport {
 
             Socket finalSocket = new Socket(inetAddress, port); // Connect
 
-            return new TcpSocket(finalSocket, usableUpgrades); // Return final socket
+            return new TcpSocket(finalSocket, usableUpgrades, peerPublicKey); // Return final socket
         } else {
-            return new TcpSocket(baseSocket, null); // Nothing to negotiate
+            return new TcpSocket(baseSocket, null, null); // Nothing to negotiate
         }
     }
 }
