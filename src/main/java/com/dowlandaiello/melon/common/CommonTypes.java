@@ -4,8 +4,15 @@
 package com.dowlandaiello.melon.common;
 
 import java.io.Serializable;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 
 import org.apache.commons.validator.routines.InetAddressValidator;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 
 /**
  * Represents an implementation of some common types and helper methods.
@@ -159,6 +166,24 @@ public class CommonTypes {
             }
 
             return Integer.parseInt(segments[3]); // Return the parsed port
+        }
+
+        /**
+         * Get the public key of a particular MultiAddress.
+         * 
+         * @param address the address to parse
+         * @return the parsed public key
+         * @throws InvalidMultiAddressException
+         * @throws DecoderException
+         * @throws NoSuchAlgorithmException
+         * @throws InvalidKeySpecException
+         */
+        public static PublicKey parsePublicKey(String address) throws InvalidMultiAddressException, DecoderException,
+                NoSuchAlgorithmException, InvalidKeySpecException {
+            // Decode the key spec
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Hex.decodeHex(address.split("/")[4].toCharArray()));
+            KeyFactory keyFactory = KeyFactory.getInstance("EC"); // Get an elliptic curve keyFactory instance
+            return keyFactory.generatePublic(keySpec); // Return the deserialized public key
         }
     }
 }
