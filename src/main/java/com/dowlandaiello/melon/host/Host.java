@@ -17,7 +17,6 @@ import javax.crypto.NoSuchPaddingException;
 
 import com.dowlandaiello.melon.transport.Tcp;
 import com.dowlandaiello.melon.transport.Transport;
-import com.dowlandaiello.melon.transport.Upgrade;
 import com.dowlandaiello.melon.transport.secio.Secio;
 
 /**
@@ -69,37 +68,6 @@ public class Host {
          */
         public void apply(Host host) {
             host.transport = this.transport; // Set transport
-        }
-    }
-
-    /**
-     * Represents a configuration option used to apply an upgrade to a melon host's
-     * transport. In other words, an UpgradeOption is shorthand for a
-     * TransportOption specifying a transport using .withUpgrade() to apply an
-     * upgrade.
-     */
-    public static class UpgradeOption {
-        /**
-         * The upgrade to apply.
-         */
-        private final Upgrade upgrade;
-
-        /**
-         * Initializes a new UpgradeOption with the given upgrade.
-         * 
-         * @param upgrade the upgrade to apply to the host
-         */
-        public UpgradeOption(Upgrade upgrade) {
-            this.upgrade = upgrade; // Set upgrade
-        }
-
-        /**
-         * Applies the option to the given host.
-         * 
-         * @param host the host to apply the option to
-         */
-        public void apply(Host host) {
-            host.transport = host.transport.withUpgrade(this.upgrade); // Upgrade host's transport
         }
     }
 
