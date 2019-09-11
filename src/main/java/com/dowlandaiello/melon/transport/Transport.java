@@ -57,7 +57,7 @@ public interface Transport {
     public Transport withFallback(Transport fallback);
 
     /**
-     * Dial a given address, and return the socket after connecting.
+     * Dials a given address, and returns the socket after connecting.
      * 
      * @param address the address of the peer to dial
      * @return the connected socket

@@ -27,12 +27,12 @@ import com.dowlandaiello.melon.transport.Upgrade;
 import com.dowlandaiello.melon.transport.secio.Secio;
 
 /**
- * Represents an upgradable TCP connection.
+ * Represents an upgradable WS connection.
  * 
  * @author Dowland Aiello
  * @since 1.0
  */
-public class TcpSocket implements Connection {
+public class WsSocket implements Connection {
     /**
      * The socket attached to the connection.
      */
@@ -79,13 +79,13 @@ public class TcpSocket implements Connection {
     private final Cipher cipherOut;
 
     /**
-     * Initializes a new TCP connection with a given socket and upgrade set.
+     * Initializes a new WebSockets connection with a given socket and upgrade set.
      * 
      * @throws NoSuchPaddingException
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      */
-    public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Key peerPublicKey)
+    public WsSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Key peerPublicKey)
             throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         this.socket = socket; // Set socket
         this.dataOutStream = new DataOutputStream(socket.getOutputStream()); // Set data output stream

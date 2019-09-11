@@ -43,6 +43,9 @@ public class Tcp implements Transport {
      */
     private Map<Upgrade.Type, Upgrade> upgrades;
 
+    /**
+     * Initializes a new TCP transport.
+     */
     public Tcp() {
         this.fallbackTransport = null; // No fallback transports
         this.upgrades = new HashMap<Upgrade.Type, Upgrade>(); // Initialize upgrades map
@@ -83,7 +86,7 @@ public class Tcp implements Transport {
     }
 
     /**
-     * Dial a given address, and return the socket after connecting.
+     * Dials a given address, and returns the socket after connecting.
      * 
      * @param address the address of the peer to dial
      * @return the connected socket
