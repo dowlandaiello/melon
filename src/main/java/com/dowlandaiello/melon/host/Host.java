@@ -1,23 +1,12 @@
-/**
- * Implements a melon host. The host is the central hub for local melon
- * operations and communications.
- */
 package com.dowlandaiello.melon.host;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-import java.security.spec.ECGenParameterSpec;
-
-import javax.crypto.NoSuchPaddingException;
 
 import com.dowlandaiello.melon.transport.Tcp;
 import com.dowlandaiello.melon.transport.Transport;
 import com.dowlandaiello.melon.transport.secio.Secio;
+
+import javax.crypto.NoSuchPaddingException;
+import java.security.*;
+import java.security.spec.ECGenParameterSpec;
 
 /**
  * Represents a local melon peer. Serves as a wrapper for core melon
@@ -33,13 +22,13 @@ public class Host {
      * @author Dowland Aiello
      * @since 1.0
      */
-    public static interface Option {
+    public interface Option {
         /**
          * Applies the option to the given host.
          *
          * @param host the host to apply the option to
          */
-        public void apply(Host host);
+        void apply(Host host);
     }
 
     /**
@@ -72,14 +61,45 @@ public class Host {
     }
 
     /**
+     * Represents a configuration option used to specify a certain keypair for
+     * p2p communications rather than simply generating one.
+     */
+    public static class IdentityOption {
+        /**
+         * The keypair to use.
+         */
+        private final KeyPair keypair;
+
+        /**
+         * Initializes a new IdentityOption with the given identity.
+         *
+         * @param identity the keypair to use for p2p communications encryption
+         *                 and identification
+         */
+        public IdentityOption(KeyPair identity) {
+            this.keypair = identity; // Set identity
+        }
+
+        /**
+         * Applies the option to the given host.
+         *
+         * @param host the host to apply the option to
+         */
+        public void apply(Host host) {
+            host.peerId = this.keypair.getPublic().getEncoded(); // Derive the new peerId from the given keypair
+            host.keypair = this.keypair; // Set the host of the keypair to be the given keypair
+        }
+    }
+
+    /**
      * The unique identifier of the host.
      */
-    public byte[] peerId;
+    private byte[] peerId;
 
     /**
      * The keypair used to derive the peerId of the host.
      */
-    public KeyPair keypair;
+    private KeyPair keypair;
 
     /**
      * The transport used to make connections with other peers.
@@ -90,14 +110,9 @@ public class Host {
      * Initializes a new host, and applies all of the given options.
      * 
      * @param opts the options to apply to an initialized host
-     * @throws NoSuchProviderException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidAlgorithmParameterException
-     * @throws NoSuchPaddingException
-     * @throws InvalidKeyException
      */
     public Host(Option... opts) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException,
-            NoSuchProviderException, InvalidKeyException, NoSuchPaddingException {
+            InvalidKeyException, NoSuchPaddingException {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC"); // Initialize keypair generator
         generator.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom()); // Initialize keypair gen
 
@@ -108,8 +123,8 @@ public class Host {
         this.transport = new Tcp().withUpgrade(new Secio(this.keypair));
 
         // Iterate through provided options
-        for (int i = 0; i < opts.length; i++) {
-            opts[i].apply(this); // Apply option
+        for (Option opt : opts) {
+            opt.apply(this); // Apply option
         }
     }
 }

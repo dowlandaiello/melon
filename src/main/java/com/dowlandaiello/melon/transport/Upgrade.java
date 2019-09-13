@@ -1,6 +1,3 @@
-/**
- * Implements a set of upgradable, generic network transports.
- */
 package com.dowlandaiello.melon.transport;
 
 import java.io.Serializable;
@@ -19,20 +16,20 @@ public interface Upgrade extends Serializable {
      * @author Dowland Aiello
      * @since 1.0
      */
-    public static class UpgradeSet implements Serializable {
+    class UpgradeSet implements Serializable {
         private static final long serialVersionUID = 1L;
 
         /**
          * The upgrades.
          */
-        public ArrayList<Upgrade> upgrades;
+        ArrayList<Upgrade> upgrades;
 
         /**
          * Initializes a new upgrade set.
          * 
          * @param upgrades the upgrades to contain in the upgrade set
          */
-        public UpgradeSet(ArrayList<Upgrade> upgrades) {
+        UpgradeSet(ArrayList<Upgrade> upgrades) {
             this.upgrades = upgrades; // Set upgrades
         }
     }
@@ -40,7 +37,7 @@ public interface Upgrade extends Serializable {
     /**
      * Represents the type of feature added by an upgrade.
      */
-    public enum Type {
+    enum Type {
         SECIO
     }
 
@@ -49,22 +46,21 @@ public interface Upgrade extends Serializable {
      * 
      * @return the type of the upgrade
      */
-    public Type getType();
+    Type getType();
 
     /**
      * Gets the respective config of an upgrade for a particular transport
      * direction.
      * 
-     * @param transportDirection remote peer address to get a configuration for
-     *                           (i.e. "127.0.0.1:3003"/"any.remote.address"")
+     * @param address the peer address to get a secio config for (i.e. "127.0.0.1:3003"/"any.remote.address"")
      * @return the upgrade's configuration
      */
-    public Object getConfig(String address);
+    Object getConfig(String address);
 
     /**
      * Converts the upgrade to a string.
      * 
      * @return the string representation of the upgrade
      */
-    public String toString();
+    String toString();
 }

@@ -1,7 +1,8 @@
-/**
- * Implements a set of commonly used types and helper methods.
- */
 package com.dowlandaiello.melon.common;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.validator.routines.InetAddressValidator;
 
 import java.io.Serializable;
 import java.security.KeyFactory;
@@ -9,10 +10,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-
-import org.apache.commons.validator.routines.InetAddressValidator;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * Represents an implementation of some common types and helper methods.
@@ -39,7 +36,7 @@ public class CommonTypes {
         /**
          * The contents of the message (optional).
          */
-        public final byte[] bytes;
+        final byte[] bytes;
 
         /**
          * The type of the message.
@@ -110,7 +107,7 @@ public class CommonTypes {
                 return false; // Invalid port
             }
 
-            return segments.length == 5 && segments[0].matches("ip(4|6)") && validator.isValid(segments[1])
+            return segments.length == 5 && segments[0].matches("ip([46])") && validator.isValid(segments[1])
                     && segments[2].matches("[a-z]{2,3}|quic"); // Return is valid
         }
 
@@ -119,7 +116,6 @@ public class CommonTypes {
          * 
          * @param address the address to parse
          * @return the parsed transport
-         * @throws InvalidMultiAddressException
          */
         public static String parseTransport(String address) throws InvalidMultiAddressException {
             String[] segments = address.split("/"); // Split address
@@ -137,7 +133,6 @@ public class CommonTypes {
          * 
          * @param address the address to parse
          * @return the parsed ip
-         * @throws InvalidMultiAddressException
          */
         public static String parseInetAddress(String address) throws InvalidMultiAddressException {
             String[] segments = address.split("/"); // Split address
@@ -155,7 +150,6 @@ public class CommonTypes {
          * 
          * @param address the address to parse
          * @return the parsed port
-         * @throws InvalidMultiAddressException
          */
         public static int parsePort(String address) throws InvalidMultiAddressException {
             String[] segments = address.split("/"); // Split address
@@ -173,12 +167,8 @@ public class CommonTypes {
          * 
          * @param address the address to parse
          * @return the parsed public key
-         * @throws InvalidMultiAddressException
-         * @throws DecoderException
-         * @throws NoSuchAlgorithmException
-         * @throws InvalidKeySpecException
          */
-        public static PublicKey parsePublicKey(String address) throws InvalidMultiAddressException, DecoderException,
+        public static PublicKey parsePublicKey(String address) throws DecoderException,
                 NoSuchAlgorithmException, InvalidKeySpecException {
             // Decode the key spec
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(Hex.decodeHex(address.split("/")[4].toCharArray()));

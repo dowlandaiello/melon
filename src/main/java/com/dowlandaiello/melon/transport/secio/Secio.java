@@ -1,18 +1,14 @@
-/**
- * Implements the secio upgrade.
- */
 package com.dowlandaiello.melon.transport.secio;
 
+import com.dowlandaiello.melon.transport.Upgrade;
+
+import javax.crypto.Cipher;
+import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-
-import com.dowlandaiello.melon.transport.Upgrade;
 
 /**
  * Represents a secio upgrade.
@@ -33,13 +29,17 @@ public class Secio implements Upgrade {
      */
     private Map<String, Cipher> cipherIn;
 
+    /**
+     * Initializes a new secio upgrade with the given sender keypair.
+     * @param senderKeypair the keypair used to encrypt outgoing communications
+     */
     public Secio(KeyPair senderKeypair) throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
         Cipher cipherOut = Cipher.getInstance("AES/ECB/PKCS5Padding"); // Get cipher instance
 
         cipherOut.init(Cipher.ENCRYPT_MODE, senderKeypair.getPrivate()); // Initialize cipher
 
         this.cipherOut = cipherOut; // Set cipher out
-        this.cipherIn = new HashMap<String, Cipher>(); // Set cipher in
+        this.cipherIn = new HashMap<>(); // Set cipher in
     }
 
     /**
@@ -62,8 +62,7 @@ public class Secio implements Upgrade {
      * Gets the respective config of an upgrade for a particular transport
      * direction.
      * 
-     * @param transportDirection the "direction" of communication to get a config
-     *                           for (accepted values: "any", "in", "out")
+     * @param address the peer address to get a secio config for
      * @return the upgrade's configuration
      */
     public Object getConfig(String address) {
