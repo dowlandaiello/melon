@@ -16,3 +16,7 @@ buildNumber.properties
 
 # VS Code Prefs
 .vscode/
+
+# IntelliJ
+.idea/
+melon.iml
