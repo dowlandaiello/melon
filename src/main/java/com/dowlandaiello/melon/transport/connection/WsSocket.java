@@ -1,30 +1,15 @@
-/**
- * Implements a set of upgradable, generic connection types.
- */
 package com.dowlandaiello.melon.transport.connection;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import com.dowlandaiello.melon.transport.Upgrade;
+import com.dowlandaiello.melon.transport.secio.Secio;
+
+import javax.crypto.*;
+import java.io.*;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SealedObject;
-
-import com.dowlandaiello.melon.transport.Upgrade;
-import com.dowlandaiello.melon.transport.secio.Secio;
 
 /**
  * Represents an upgradable WS connection.
@@ -79,11 +64,32 @@ public class WsSocket implements Connection {
     private final Cipher cipherOut;
 
     /**
+     * Initializes a new WS connection with a given socket.
+     *
+     * @param socket the socket to wrap in a new WS connection
+     */
+    public WsSocket(Socket socket) throws IOException {
+        this.socket = socket; // Set socket
+        this.dataOutStream = new DataOutputStream(socket.getOutputStream()); // Set data output stream
+        this.dataInStream = new DataInputStream(socket.getInputStream()); // Set data input stream
+        this.objOutStream = new ObjectOutputStream(socket.getOutputStream()); // Set object output stream
+        this.objInStream = new ObjectInputStream(socket.getInputStream()); // Set object input stream
+
+        // Set cipher streams to null since SECIO is not supported
+        this.cipherOutStream = null;
+        this.cipherInStream = null;
+
+        // Set ciphers to null since SECIO is not supported
+        this.cipherOut = null;
+        this.cipherIn = null;
+    }
+
+    /**
      * Initializes a new WebSockets connection with a given socket and upgrade set.
-     * 
-     * @throws NoSuchPaddingException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
+     *
+     * @param socket the socket to wrap in the new WsSocket instance
+     * @param upgrades the upgrades to apply to the new WsSocket instance
+     * @param peerPublicKey the public key to use to decrypt connections from the connected peer (this parameter is optional without secio)
      */
     public WsSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Key peerPublicKey)
             throws IOException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException {
@@ -128,7 +134,6 @@ public class WsSocket implements Connection {
      * Writes a single byte to a connection.
      * 
      * @param b the byte to write to the connection
-     * @throws IOException
      */
     public void write(int b) throws IOException {
         // Check has secio upgrade
@@ -145,7 +150,6 @@ public class WsSocket implements Connection {
      * Reads a single byte from a connection.
      * 
      * @return the read byte
-     * @throws IOException
      */
     public int read() throws IOException {
         // Check has secio upgrade
@@ -158,8 +162,6 @@ public class WsSocket implements Connection {
 
     /**
      * Writes a byte array to a connection.
-     * 
-     * @throws IOException
      */
     public void write(byte[] b) throws IOException {
         // Check has secio upgrade
@@ -191,8 +193,6 @@ public class WsSocket implements Connection {
      * Writes an object to the connection.
      * 
      * @param obj the object to write
-     * @throws IOException
-     * @throws IllegalBlockSizeException
      */
     public void writeObject(Serializable obj) throws IOException, IllegalBlockSizeException {
         // Check has secio upgrade
@@ -209,10 +209,6 @@ public class WsSocket implements Connection {
      * Reads an object from the connection.
      * 
      * @return the read object
-     * @throws IOException
-     * @throws ClassNotFoundException
-     * @throws BadPaddingException
-     * @throws IllegalBlockSizeException
      */
     public Object readObject()
             throws IOException, ClassNotFoundException, IllegalBlockSizeException, BadPaddingException {
@@ -228,8 +224,6 @@ public class WsSocket implements Connection {
 
     /**
      * Flushes the connection.
-     * 
-     * @throws IOException
      */
     public void flush() throws IOException {
         this.dataOutStream.flush(); // Flush data output stream
@@ -239,8 +233,6 @@ public class WsSocket implements Connection {
 
     /**
      * Closes the connection.
-     * 
-     * @throws IOException
      */
     public void close() throws IOException {
         this.dataOutStream.close(); // Close data outs stream

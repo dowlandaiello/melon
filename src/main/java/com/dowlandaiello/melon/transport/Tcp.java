@@ -1,8 +1,13 @@
-/**
- * Implements a set of upgradable, generic network transports.
- */
 package com.dowlandaiello.melon.transport;
 
+import com.dowlandaiello.melon.common.CommonTypes;
+import com.dowlandaiello.melon.common.CommonTypes.Message;
+import com.dowlandaiello.melon.transport.Upgrade.UpgradeSet;
+import com.dowlandaiello.melon.transport.connection.Connection;
+import com.dowlandaiello.melon.transport.connection.TcpSocket;
+import org.apache.commons.codec.DecoderException;
+
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -15,16 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.crypto.NoSuchPaddingException;
-
-import com.dowlandaiello.melon.common.CommonTypes;
-import com.dowlandaiello.melon.common.CommonTypes.Message;
-import com.dowlandaiello.melon.transport.Upgrade.UpgradeSet;
-import com.dowlandaiello.melon.transport.connection.Connection;
-import com.dowlandaiello.melon.transport.connection.TcpSocket;
-
-import org.apache.commons.codec.DecoderException;
 
 /**
  * Represents an upgradable tcp transport.
@@ -48,7 +43,7 @@ public class Tcp implements Transport {
      */
     public Tcp() {
         this.fallbackTransport = null; // No fallback transports
-        this.upgrades = new HashMap<Upgrade.Type, Upgrade>(); // Initialize upgrades map
+        this.upgrades = new HashMap<>(); // Initialize upgrades map
     }
 
     /**
@@ -90,11 +85,6 @@ public class Tcp implements Transport {
      * 
      * @param address the address of the peer to dial
      * @return the connected socket
-     * @throws NoSuchPaddingException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
-     * @throws DecoderException
-     * @throws InvalidKeySpecException
      */
     public Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
             UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
@@ -115,7 +105,7 @@ public class Tcp implements Transport {
         PublicKey peerPublicKey = CommonTypes.MultiAddress.parsePublicKey(address);
 
         // Check is not using tcp
-        if (transport != "tcp") {
+        if (!transport.equals("tcp")) {
             // Check no fallback
             if (this.fallbackTransport == null) {
                 // Throw exception indicating use of unsupported transport
@@ -128,7 +118,7 @@ public class Tcp implements Transport {
 
         // Initialize upgrade set for negotiation
         UpgradeSet upgrades = new UpgradeSet(
-                new ArrayList<Upgrade>(Arrays.asList((Upgrade[]) this.upgrades.values().toArray())));
+                new ArrayList<>(Arrays.asList((Upgrade[]) this.upgrades.values().toArray())));
 
         // Initialize a negotiation message
         Message availableUpgradesMessage = new Message(upgrades, Message.Type.NEGOTIATION);
@@ -145,17 +135,22 @@ public class Tcp implements Transport {
         if (response.type == Message.Type.NEGOTIATION) {
             // Cast message contents to upgrade set (the connected peer's supported
             // upgrades)
-            ArrayList<Upgrade> peerSupportedUpgrades = ((UpgradeSet) response.contents).upgrades;
+            ArrayList<Upgrade> peerSupportedUpgrades = response.contents != null ? ((UpgradeSet) response.contents).upgrades : null;
+
+            // Check no upgrades
+            if (peerSupportedUpgrades == null || peerSupportedUpgrades.size() == 0) {
+                return new TcpSocket(baseSocket); // Just use a base socket
+            }
 
             // Initialize usable upgrades map
-            HashMap<Upgrade.Type, Upgrade> usableUpgrades = new HashMap<Upgrade.Type, Upgrade>();
+            HashMap<Upgrade.Type, Upgrade> usableUpgrades = new HashMap<>();
 
             // Iterate through upgrades
-            for (int i = 0; i < peerSupportedUpgrades.size(); i++) {
+            for (Upgrade peerSupportedUpgrade : peerSupportedUpgrades) {
                 // Iterate through locally supported upgrades
                 for (int x = 0; x < upgrades.upgrades.size(); x++) {
                     // Check both supported
-                    if (upgrades.upgrades.get(x).getType() == peerSupportedUpgrades.get(i).getType()) {
+                    if (upgrades.upgrades.get(x).getType() == peerSupportedUpgrade.getType()) {
                         // Add upgrade to usable upgrades list
                         usableUpgrades.put(upgrades.upgrades.get(x).getType(), upgrades.upgrades.get(x));
 
@@ -170,7 +165,7 @@ public class Tcp implements Transport {
 
             return new TcpSocket(finalSocket, usableUpgrades, peerPublicKey); // Return final socket
         } else {
-            return new TcpSocket(baseSocket, null, null); // Nothing to negotiate
+            return new TcpSocket(baseSocket); // Nothing to negotiate
         }
     }
 }
