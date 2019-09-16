@@ -2,15 +2,18 @@ package com.dowlandaiello.melon.transport;
 
 import com.dowlandaiello.melon.common.CommonTypes;
 import com.dowlandaiello.melon.common.CommonTypes.Message;
-import com.dowlandaiello.melon.transport.Upgrade.UpgradeSet;
+import com.dowlandaiello.melon.common.CommonTypes.MultiAddress.InvalidMultiAddressException;
 import com.dowlandaiello.melon.transport.connection.Connection;
+import com.dowlandaiello.melon.transport.connection.Negotiation;
 import com.dowlandaiello.melon.transport.connection.TcpSocket;
 import org.apache.commons.codec.DecoderException;
 
+import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -19,7 +22,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Represents an upgradable tcp transport.
@@ -36,7 +38,7 @@ public class Tcp implements Transport {
     /**
      * The upgrades to use.
      */
-    private Map<Upgrade.Type, Upgrade> upgrades;
+    private HashMap<Upgrade.Type, Upgrade> upgrades;
 
     /**
      * Initializes a new TCP transport.
@@ -81,18 +83,82 @@ public class Tcp implements Transport {
     }
 
     /**
+     * Listens on the given multiaddress, and executes the given callback with
+     * each successfully established connection.
+     *
+     * @param multiaddress the multiaddress to listen on
+     * @param callback the callback to run after successfully establishing a
+     *                 connection
+     */
+    public void listen(String multiaddress, CallbackInterface callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException {
+        int port = CommonTypes.MultiAddress.parsePort(multiaddress); // Get the port we'll be listening on
+
+        ServerSocket serverSocket = new ServerSocket(port); // Initialize a server socket for the given port
+
+        // Do while the server socket is open
+        while(!serverSocket.isClosed()) {
+            Socket socket = serverSocket.accept(); // Accept a socket
+
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream()); // Get an object input stream for the socket
+
+            Message resp = (Message) in.readObject(); // Read a response from the peer
+
+            Cipher inCipher = null; // We'll set this once we find out the remote peer's public key
+
+            // Check is negotiation
+            if (resp.type == Message.Type.NEGOTIATION) {
+                Negotiation peerNegotiation = resp.contents != null ? (Negotiation) resp.contents : null; // Get the peer's negotiation
+                Negotiation selfNegotiation; // We'll construct a negotiation to send to the remote peer once we've determined which protocols we have in common
+
+                // Check no common upgrades
+                if (peerNegotiation == null || peerNegotiation.availableUpgrades.size() == 0) {
+                    callback.doCallback(new TcpSocket(socket)); // Just use a bare socket
+
+                    continue; // Continue
+                }
+
+                inCipher = peerNegotiation.cipher; // Set in cipher
+
+                ArrayList<Upgrade> supportedUpgrades = new ArrayList<>(); // Initialize supported upgrades array list
+
+                // Iterate through available upgrades
+                for (Upgrade upgrade : peerNegotiation.availableUpgrades) {
+                    // Check has upgrade
+                    if (this.upgrades.containsKey(upgrade.getType())) {
+                        supportedUpgrades.add(this.upgrades.get(upgrade.getType())); // Add upgrade to supported upgrades list
+                    }
+                }
+
+                // Check has secio upgrade
+                if (this.upgrades.containsKey(Upgrade.Type.SECIO)) {
+                    selfNegotiation = new Negotiation((Cipher) this.upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1"), supportedUpgrades); // Initialize negotiation
+                } else {
+                    selfNegotiation = new Negotiation(null, supportedUpgrades); // Initialize negotiation
+                }
+
+                (new ObjectOutputStream(socket.getOutputStream())).writeObject(selfNegotiation); // Write negotiation
+            }
+
+            // Check has secio upgrade
+            if (this.upgrades.containsKey(Upgrade.Type.SECIO)) {
+                callback.doCallback(new TcpSocket(socket, this.upgrades, inCipher)); // Do callback
+            }
+        }
+    }
+
+    /**
      * Dials a given address, and returns the socket after connecting.
      * 
      * @param address the address of the peer to dial
      * @return the connected socket
      */
-    public Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
+    public Connection dial(String address) throws IOException, InvalidMultiAddressException,
             UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
             NoSuchPaddingException, DecoderException, InvalidKeySpecException {
         // Check multiAddr invalid
         if (!CommonTypes.MultiAddress.isValid(address)) {
             // Throw exception
-            throw new CommonTypes.MultiAddress.InvalidMultiAddressException(
+            throw new InvalidMultiAddressException(
                     "attempted to dial improperly formatted address");
         }
 
@@ -116,12 +182,13 @@ public class Tcp implements Transport {
             return this.fallbackTransport.dial(address); // Try dialing with fallback
         }
 
-        // Initialize upgrade set for negotiation
-        UpgradeSet upgrades = new UpgradeSet(
-                new ArrayList<>(Arrays.asList((Upgrade[]) this.upgrades.values().toArray())));
+        ArrayList<Upgrade> upgrades = new ArrayList<>(Arrays.asList((Upgrade[]) this.upgrades.values().toArray())); // Convert upgrade map to ArrayList
+
+        // Initialize a negotiation
+        Negotiation negotiation = this.upgrades.containsKey(Upgrade.Type.SECIO) ? new Negotiation(((Cipher) this.upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1")), upgrades) : new Negotiation(null, upgrades);
 
         // Initialize a negotiation message
-        Message availableUpgradesMessage = new Message(upgrades, Message.Type.NEGOTIATION);
+        Message availableUpgradesMessage = new Message(negotiation, Message.Type.NEGOTIATION);
 
         Socket baseSocket = new Socket(inetAddress, port); // Connect without upgrading
         ObjectOutputStream outStream = new ObjectOutputStream(baseSocket.getOutputStream()); // Get output stream
@@ -135,7 +202,7 @@ public class Tcp implements Transport {
         if (response.type == Message.Type.NEGOTIATION) {
             // Cast message contents to upgrade set (the connected peer's supported
             // upgrades)
-            ArrayList<Upgrade> peerSupportedUpgrades = response.contents != null ? ((UpgradeSet) response.contents).upgrades : null;
+            ArrayList<Upgrade> peerSupportedUpgrades = response.contents != null ? ((Negotiation) response.contents).availableUpgrades : null;
 
             // Check no upgrades
             if (peerSupportedUpgrades == null || peerSupportedUpgrades.size() == 0) {
@@ -148,22 +215,18 @@ public class Tcp implements Transport {
             // Iterate through upgrades
             for (Upgrade peerSupportedUpgrade : peerSupportedUpgrades) {
                 // Iterate through locally supported upgrades
-                for (int x = 0; x < upgrades.upgrades.size(); x++) {
+                for (Upgrade upgrade : upgrades) {
                     // Check both supported
-                    if (upgrades.upgrades.get(x).getType() == peerSupportedUpgrade.getType()) {
+                    if (upgrade.getType() == peerSupportedUpgrade.getType()) {
                         // Add upgrade to usable upgrades list
-                        usableUpgrades.put(upgrades.upgrades.get(x).getType(), upgrades.upgrades.get(x));
+                        usableUpgrades.put(upgrade.getType(), upgrade);
 
                         break; // Break
                     }
                 }
             }
 
-            baseSocket.close(); // Close the base socket
-
-            Socket finalSocket = new Socket(inetAddress, port); // Connect
-
-            return new TcpSocket(finalSocket, usableUpgrades, peerPublicKey); // Return final socket
+            return new TcpSocket(baseSocket, usableUpgrades, peerPublicKey); // Return final socket
         } else {
             return new TcpSocket(baseSocket); // Nothing to negotiate
         }

@@ -85,6 +85,47 @@ public class TcpSocket implements Connection {
     }
 
     /**
+     * Initializes a new TCP connection with a given socket, upgrade set, and communications cipher.
+     *
+     * @param socket the socket to wrap in a new TCP socket instance
+     * @param upgrades the upgrades ot use with the new socket instance
+     * @param cipherIn the cipher used to decrypt incoming communications
+     */
+    public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Cipher cipherIn) throws IOException {
+        this.socket = socket; // Set socket
+        this.dataOutStream = new DataOutputStream(socket.getOutputStream()); // Set data output stream
+        this.dataInStream = new DataInputStream(socket.getInputStream()); // Set data input stream
+        this.objOutStream = new ObjectOutputStream(socket.getOutputStream()); // Set object output stream
+        this.objInStream = new ObjectInputStream(socket.getInputStream()); // Set object input stream
+
+        Secio secio = upgrades.containsKey(Upgrade.Type.SECIO) ? (Secio) upgrades.get(Upgrade.Type.SECIO) : null; // Get secio upgrade
+
+        // Check no secio support
+        if (secio != null) {
+            secio.registerPeerCipher(socket.getRemoteSocketAddress().toString(), cipherIn); // Register the cipher
+
+            Cipher cipherOut = (Cipher) secio.getConfig("127.0.0.1"); // Get outbound cipher
+
+            // Set cipher streams
+            this.cipherOutStream = new CipherOutputStream(socket.getOutputStream(), cipherOut);
+            this.cipherInStream = new CipherInputStream(socket.getInputStream(), cipherIn);
+
+            this.cipherOut = cipherOut; // Set cipher out
+            this.cipherIn = cipherIn; // Set cipher in
+
+            return; // Done!
+        }
+
+        // Set cipher streams to null since SECIO is not supported
+        this.cipherOutStream = null;
+        this.cipherInStream = null;
+
+        // Set ciphers to null since SECIO is not supported
+        this.cipherOut = null;
+        this.cipherIn = null;
+    }
+
+    /**
      * Initializes a new TCP connection with a given socket and upgrade set.
      */
     public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Key peerPublicKey)

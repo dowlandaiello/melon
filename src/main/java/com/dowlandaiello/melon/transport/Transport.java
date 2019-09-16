@@ -1,6 +1,6 @@
 package com.dowlandaiello.melon.transport;
 
-import com.dowlandaiello.melon.common.CommonTypes;
+import com.dowlandaiello.melon.common.CommonTypes.MultiAddress.InvalidMultiAddressException;
 import com.dowlandaiello.melon.transport.connection.Connection;
 import org.apache.commons.codec.DecoderException;
 
@@ -33,6 +33,15 @@ public interface Transport {
         }
     }
 
+    interface CallbackInterface {
+        /**
+         * A callback executed after an incoming connection is successfully established.
+         *
+         * @param conn the connection passed into the callback
+         */
+        void doCallback(Connection conn);
+    }
+
     /**
      * Applies a particular upgrade to a transport.
      * 
@@ -52,12 +61,22 @@ public interface Transport {
     Transport withFallback(Transport fallback);
 
     /**
+     * Listens on the given multiaddress, and executes the given callback with
+     * each successfully established connection.
+     *
+     * @param multiaddress the multiaddress to listen on
+     * @param callback the callback to run after successfully establishing a
+     *                 connection
+     */
+    void listen(String multiaddress, CallbackInterface callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException;
+
+    /**
      * Dials a given address, and returns the socket after connecting.
      * 
      * @param address the address of the peer to dial
      * @return the connected socket
      */
-    Connection dial(String address) throws IOException, CommonTypes.MultiAddress.InvalidMultiAddressException,
+    Connection dial(String address) throws IOException, InvalidMultiAddressException,
             UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
             NoSuchPaddingException, DecoderException, InvalidKeySpecException;
 }

@@ -1,7 +1,6 @@
 package com.dowlandaiello.melon.transport;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 /**
  * A generic upgrade to a particular transport.
@@ -10,30 +9,6 @@ import java.util.ArrayList;
  * @since 1.0
  */
 public interface Upgrade extends Serializable {
-    /**
-     * Represents a set of upgrades.
-     * 
-     * @author Dowland Aiello
-     * @since 1.0
-     */
-    class UpgradeSet implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        /**
-         * The upgrades.
-         */
-        ArrayList<Upgrade> upgrades;
-
-        /**
-         * Initializes a new upgrade set.
-         * 
-         * @param upgrades the upgrades to contain in the upgrade set
-         */
-        UpgradeSet(ArrayList<Upgrade> upgrades) {
-            this.upgrades = upgrades; // Set upgrades
-        }
-    }
-
     /**
      * Represents the type of feature added by an upgrade.
      */
