@@ -27,7 +27,7 @@ public class Negotiation implements Serializable {
      * Initializes a new negotiation instance with the given public key and
      * upgrade set.
      *
-     * @param publicKey the public key to use
+     * @param cipher the cipher to use
      * @param availableUpgrades the upgrades to use
      */
     public Negotiation(Cipher cipher, ArrayList<Upgrade> availableUpgrades) {
