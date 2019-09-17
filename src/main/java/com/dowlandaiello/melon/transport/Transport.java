@@ -4,6 +4,8 @@ import com.dowlandaiello.melon.common.CommonTypes.MultiAddress.InvalidMultiAddre
 import com.dowlandaiello.melon.transport.connection.Connection;
 import org.apache.commons.codec.DecoderException;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -33,13 +35,18 @@ public interface Transport {
         }
     }
 
-    interface CallbackInterface {
+    /**
+     * A callback executed after an incoming connection is successfully established.
+     *
+     * @since 1.0
+     */
+    interface Callback {
         /**
-         * A callback executed after an incoming connection is successfully established.
+         * Executes the target callback.
          *
          * @param conn the connection passed into the callback
          */
-        void doCallback(Connection conn);
+        void doCallback(Connection conn) throws ClassNotFoundException, IllegalBlockSizeException, BadPaddingException, IOException;
     }
 
     /**
@@ -68,7 +75,7 @@ public interface Transport {
      * @param callback the callback to run after successfully establishing a
      *                 connection
      */
-    void listen(String multiaddress, CallbackInterface callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException;
+    void listen(String multiaddress, Callback callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException, BadPaddingException, IllegalBlockSizeException;
 
     /**
      * Dials a given address, and returns the socket after connecting.

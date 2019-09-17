@@ -8,7 +8,9 @@ import com.dowlandaiello.melon.transport.connection.Negotiation;
 import com.dowlandaiello.melon.transport.connection.TcpSocket;
 import org.apache.commons.codec.DecoderException;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -90,7 +92,7 @@ public class Tcp implements Transport {
      * @param callback the callback to run after successfully establishing a
      *                 connection
      */
-    public void listen(String multiaddress, CallbackInterface callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException {
+    public void listen(String multiaddress, Callback callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException, BadPaddingException, IllegalBlockSizeException {
         int port = CommonTypes.MultiAddress.parsePort(multiaddress); // Get the port we'll be listening on
 
         ServerSocket serverSocket = new ServerSocket(port); // Initialize a server socket for the given port
@@ -142,6 +144,8 @@ public class Tcp implements Transport {
             // Check has secio upgrade
             if (this.upgrades.containsKey(Upgrade.Type.SECIO)) {
                 callback.doCallback(new TcpSocket(socket, this.upgrades, inCipher)); // Do callback
+            } else {
+                callback.doCallback(new TcpSocket(socket)); // Do callback
             }
         }
     }
