@@ -8,9 +8,7 @@ import com.dowlandaiello.melon.transport.connection.Negotiation;
 import com.dowlandaiello.melon.transport.connection.TcpSocket;
 import org.apache.commons.codec.DecoderException;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -92,7 +90,7 @@ public class Tcp implements Transport {
      * @param callback the callback to run after successfully establishing a
      *                 connection
      */
-    public void listen(String multiaddress, Callback callback) throws InvalidMultiAddressException, IOException, ClassNotFoundException, BadPaddingException, IllegalBlockSizeException {
+    public void listen(String multiaddress, Callback callback) throws InvalidMultiAddressException, IOException {
         int port = CommonTypes.MultiAddress.parsePort(multiaddress); // Get the port we'll be listening on
 
         ServerSocket serverSocket = new ServerSocket(port); // Initialize a server socket for the given port
@@ -101,52 +99,65 @@ public class Tcp implements Transport {
         while(!serverSocket.isClosed()) {
             Socket socket = serverSocket.accept(); // Accept a socket
 
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream()); // Get an object input stream for the socket
+            class ConnectionHandler extends Thread {
+                public void run() {
+                    try {
+                        ObjectInputStream in = new ObjectInputStream(socket.getInputStream()); // Get an object input stream for the socket
 
-            Message resp = (Message) in.readObject(); // Read a response from the peer
+                        Message resp = (Message) in.readObject(); // Read a response from the peer
 
-            Cipher inCipher = null; // We'll set this once we find out the remote peer's public key
+                        Cipher inCipher; // We'll set this once we find out the remote peer's public key
 
-            // Check is negotiation
-            if (resp.type == Message.Type.NEGOTIATION) {
-                Negotiation peerNegotiation = resp.contents != null ? (Negotiation) resp.contents : null; // Get the peer's negotiation
-                Negotiation selfNegotiation; // We'll construct a negotiation to send to the remote peer once we've determined which protocols we have in common
+                        // Check is negotiation
+                        if (resp.type == Message.Type.NEGOTIATION) {
+                            Negotiation peerNegotiation = resp.contents != null ? (Negotiation) resp.contents : null; // Get the peer's negotiation
+                            Negotiation selfNegotiation; // We'll construct a negotiation to send to the remote peer once we've determined which protocols we have in common
 
-                // Check no common upgrades
-                if (peerNegotiation == null || peerNegotiation.availableUpgrades.size() == 0) {
-                    callback.doCallback(new TcpSocket(socket)); // Just use a bare socket
+                            // Check no common upgrades
+                            if (peerNegotiation == null || peerNegotiation.availableUpgrades.size() == 0) {
+                                callback.doCallback(new TcpSocket(socket)); // Just use a bare socket
 
-                    continue; // Continue
-                }
+                                return; // Continue
+                            }
 
-                inCipher = peerNegotiation.cipher; // Set in cipher
+                            inCipher = peerNegotiation.cipher; // Set in cipher
 
-                ArrayList<Upgrade> supportedUpgrades = new ArrayList<>(); // Initialize supported upgrades array list
+                            ArrayList<Upgrade> supportedUpgrades = new ArrayList<>(); // Initialize supported upgrades array list
+                            HashMap<Upgrade.Type, Upgrade> socketUpgrades = new HashMap<>(); // Initialize socket upgrades map
 
-                // Iterate through available upgrades
-                for (Upgrade upgrade : peerNegotiation.availableUpgrades) {
-                    // Check has upgrade
-                    if (this.upgrades.containsKey(upgrade.getType())) {
-                        supportedUpgrades.add(this.upgrades.get(upgrade.getType())); // Add upgrade to supported upgrades list
+                            // Iterate through available upgrades
+                            for (Upgrade upgrade : peerNegotiation.availableUpgrades) {
+                                // Check has upgrade
+                                if (upgrades.containsKey(upgrade.getType())) {
+                                    supportedUpgrades.add(upgrades.get(upgrade.getType())); // Add upgrade to supported upgrades list
+                                    socketUpgrades.put(upgrade.getType(), upgrades.get(upgrade.getType())); // Add the upgrade to the socket upgrades map
+                                }
+                            }
+
+                            // Check has secio upgrade
+                            if (upgrades.containsKey(Upgrade.Type.SECIO)) {
+                                selfNegotiation = new Negotiation((Cipher) upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1"), supportedUpgrades); // Initialize negotiation
+                            } else {
+                                selfNegotiation = new Negotiation(null, supportedUpgrades); // Initialize negotiation
+                            }
+
+                            (new ObjectOutputStream(socket.getOutputStream())).writeObject(selfNegotiation); // Write negotiation
+
+                            callback.doCallback(new TcpSocket(socket, socketUpgrades, inCipher)); // Do callback
+
+                            return;
+                        }
+
+
+                        callback.doCallback(new TcpSocket(socket)); // Do callback
+                    } catch (Exception e) {
+                        e.printStackTrace(); // Log errors
                     }
                 }
-
-                // Check has secio upgrade
-                if (this.upgrades.containsKey(Upgrade.Type.SECIO)) {
-                    selfNegotiation = new Negotiation((Cipher) this.upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1"), supportedUpgrades); // Initialize negotiation
-                } else {
-                    selfNegotiation = new Negotiation(null, supportedUpgrades); // Initialize negotiation
-                }
-
-                (new ObjectOutputStream(socket.getOutputStream())).writeObject(selfNegotiation); // Write negotiation
             }
 
-            // Check has secio upgrade
-            if (this.upgrades.containsKey(Upgrade.Type.SECIO)) {
-                callback.doCallback(new TcpSocket(socket, this.upgrades, inCipher)); // Do callback
-            } else {
-                callback.doCallback(new TcpSocket(socket)); // Do callback
-            }
+            ConnectionHandler connHandler = new ConnectionHandler(); // Initialize a new connection handler
+            connHandler.start(); // Start the connection handler
         }
     }
 
