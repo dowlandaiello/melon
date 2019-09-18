@@ -49,7 +49,7 @@ public class CommonTypes {
          * @param contents the contents of the message
          * @param type     the type of the message
          */
-        public Message(Object contents, Type type) {
+        public Message(Serializable contents, Type type) {
             this.contents = contents; // Set contents
             this.bytes = null; // Set bytes
             this.type = type; // Set message type
@@ -57,6 +57,9 @@ public class CommonTypes {
 
         /**
          * Initializes a new message.
+         *
+         * @param contents the contents of the message
+         * @param type the type of the message
          */
         public Message(byte[] contents, Type type) {
             this.contents = null; // Set contents to null, since we aren't sending any objects in this message
