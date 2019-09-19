@@ -4,6 +4,7 @@ import com.dowlandaiello.melon.transport.Upgrade;
 
 import javax.crypto.Cipher;
 import java.io.Serializable;
+import java.security.Key;
 import java.util.ArrayList;
 
 /**
@@ -24,14 +25,20 @@ public class Negotiation implements Serializable {
     public ArrayList<Upgrade> availableUpgrades;
 
     /**
+     * The public key of the connected peer.
+     */
+    public Key publicKey;
+
+    /**
      * Initializes a new negotiation instance with the given public key and
      * upgrade set.
      *
      * @param cipher the cipher to use
      * @param availableUpgrades the upgrades to use
      */
-    public Negotiation(Cipher cipher, ArrayList<Upgrade> availableUpgrades) {
+    public Negotiation(Cipher cipher, ArrayList<Upgrade> availableUpgrades, Key publicKey) {
         this.cipher = cipher; // Set cipher
         this.availableUpgrades = availableUpgrades; // Set upgrades
+        this.publicKey = publicKey; // Set public key
     }
 }

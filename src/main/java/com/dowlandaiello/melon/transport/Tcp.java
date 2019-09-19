@@ -16,6 +16,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -115,7 +116,13 @@ public class Tcp implements Transport {
 
                             // Check no common upgrades
                             if (peerNegotiation == null || peerNegotiation.availableUpgrades.size() == 0) {
-                                callback.doCallback(new TcpSocket(socket)); // Just use a bare socket
+                                // Check has negotiation from peer
+                                if (peerNegotiation != null) {
+                                    callback.doCallback(new TcpSocket(socket, new HashMap<>(), peerNegotiation.cipher, peerNegotiation.publicKey)); // Just use a bare socket
+                                } else {
+                                    callback.doCallback(new TcpSocket(socket, new HashMap<>(), null, null)); // Just use a bare socket
+                                }
+
 
                                 return; // Continue
                             }
@@ -136,14 +143,14 @@ public class Tcp implements Transport {
 
                             // Check has secio upgrade
                             if (upgrades.containsKey(Upgrade.Type.SECIO)) {
-                                selfNegotiation = new Negotiation((Cipher) upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1"), supportedUpgrades); // Initialize negotiation
+                                selfNegotiation = new Negotiation((Cipher) upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1"), supportedUpgrades, CommonTypes.MultiAddress.parsePublicKey(multiaddress)); // Initialize negotiation
                             } else {
-                                selfNegotiation = new Negotiation(null, supportedUpgrades); // Initialize negotiation
+                                selfNegotiation = new Negotiation(null, supportedUpgrades, CommonTypes.MultiAddress.parsePublicKey(multiaddress)); // Initialize negotiation
                             }
 
                             (new ObjectOutputStream(socket.getOutputStream())).writeObject(selfNegotiation); // Write negotiation
 
-                            callback.doCallback(new TcpSocket(socket, socketUpgrades, inCipher)); // Do callback
+                            callback.doCallback(new TcpSocket(socket, socketUpgrades, inCipher, peerNegotiation.publicKey)); // Do callback
 
                             return;
                         }
@@ -167,7 +174,7 @@ public class Tcp implements Transport {
      * @param address the address of the peer to dial
      * @return the connected socket
      */
-    public Connection dial(String address) throws IOException, InvalidMultiAddressException,
+    public Connection dial(String address, Key sendingPublicKey) throws IOException, InvalidMultiAddressException,
             UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
             NoSuchPaddingException, DecoderException, InvalidKeySpecException {
         // Check multiAddr invalid
@@ -194,13 +201,13 @@ public class Tcp implements Transport {
                         String.format("attempted to dial a peer using an unsupported transport (%s)", transport)); // Throw
             }
 
-            return this.fallbackTransport.dial(address); // Try dialing with fallback
+            return this.fallbackTransport.dial(address, sendingPublicKey); // Try dialing with fallback
         }
 
         ArrayList<Upgrade> upgrades = new ArrayList<>(Arrays.asList((Upgrade[]) this.upgrades.values().toArray())); // Convert upgrade map to ArrayList
 
         // Initialize a negotiation
-        Negotiation negotiation = this.upgrades.containsKey(Upgrade.Type.SECIO) ? new Negotiation(((Cipher) this.upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1")), upgrades) : new Negotiation(null, upgrades);
+        Negotiation negotiation = this.upgrades.containsKey(Upgrade.Type.SECIO) ? new Negotiation(((Cipher) this.upgrades.get(Upgrade.Type.SECIO).getConfig("127.0.0.1")), upgrades, sendingPublicKey) : new Negotiation(null, upgrades, sendingPublicKey);
 
         // Initialize a negotiation message
         Message availableUpgradesMessage = new Message(negotiation, Message.Type.NEGOTIATION);

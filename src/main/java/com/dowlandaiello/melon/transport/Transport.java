@@ -9,6 +9,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
@@ -83,7 +84,7 @@ public interface Transport {
      * @param address the address of the peer to dial
      * @return the connected socket
      */
-    Connection dial(String address) throws IOException, InvalidMultiAddressException,
+    Connection dial(String address, Key sendingPublicKey) throws IOException, InvalidMultiAddressException,
             UnsupportedTransportException, ClassNotFoundException, InvalidKeyException, NoSuchAlgorithmException,
             NoSuchPaddingException, DecoderException, InvalidKeySpecException;
 }

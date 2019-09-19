@@ -63,4 +63,11 @@ public interface Connection {
      * Closes the connection.
      */
     void close() throws IOException;
+
+    /**
+     * Get the multiaddress of the connected peer.
+     *
+     * @return the multiaddress of the connected peer
+     */
+    String getRemoteMultiaddress();
 }

@@ -2,10 +2,11 @@ package com.dowlandaiello.melon.transport.connection;
 
 import com.dowlandaiello.melon.transport.Upgrade;
 import com.dowlandaiello.melon.transport.secio.Secio;
+import org.apache.commons.codec.binary.Hex;
 
 import javax.crypto.*;
 import java.io.*;
-import java.net.Socket;
+import java.net.*;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -64,6 +65,11 @@ public class TcpSocket implements Connection {
     private final Cipher cipherOut;
 
     /**
+     * The multiaddress of the connected peer.
+     */
+    private final String remoteAddress;
+
+    /**
      * Initializes a new TCP connection with a given socket.
      *
      * @param socket the socket to wrap in a new TCP connection
@@ -82,6 +88,9 @@ public class TcpSocket implements Connection {
         // Set ciphers to null since SECIO is not supported
         this.cipherOut = null;
         this.cipherIn = null;
+
+        // Set the address of the remote peer
+        this.remoteAddress = "";
     }
 
     /**
@@ -91,7 +100,7 @@ public class TcpSocket implements Connection {
      * @param upgrades the upgrades ot use with the new socket instance
      * @param cipherIn the cipher used to decrypt incoming communications
      */
-    public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Cipher cipherIn) throws IOException {
+    public TcpSocket(Socket socket, HashMap<Upgrade.Type, Upgrade> upgrades, Cipher cipherIn, Key peerPublicKey) throws IOException {
         this.socket = socket; // Set socket
         this.dataOutStream = new DataOutputStream(socket.getOutputStream()); // Set data output stream
         this.dataInStream = new DataInputStream(socket.getInputStream()); // Set data input stream
@@ -113,6 +122,17 @@ public class TcpSocket implements Connection {
             this.cipherOut = cipherOut; // Set cipher out
             this.cipherIn = cipherIn; // Set cipher in
 
+            SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress(); // Get the socket address of the remote peer
+
+            // Check socket has socket address
+            if (remoteSocketAddress instanceof InetSocketAddress) {
+                InetAddress address = ((InetSocketAddress) remoteSocketAddress).getAddress(); // Get the address of the remote peer
+
+                this.remoteAddress = String.format("/ip%d/%s/%s/%d/%s", (address instanceof Inet4Address ? 4 : 6), address.getHostAddress(), "tcp", socket.getPort(), Hex.encodeHexString(peerPublicKey.getEncoded())); // Construct a multiaddress
+            } else {
+                this.remoteAddress = ""; // Set the address of the remote peer to an empty string
+            }
+
             return; // Done!
         }
 
@@ -123,6 +143,9 @@ public class TcpSocket implements Connection {
         // Set ciphers to null since SECIO is not supported
         this.cipherOut = null;
         this.cipherIn = null;
+
+        // Set the address of the remote peer
+        this.remoteAddress = "";
     }
 
     /**
@@ -155,6 +178,17 @@ public class TcpSocket implements Connection {
             this.cipherOut = cipherOut; // Set cipher out
             this.cipherIn = cipherIn; // Set cipher in
 
+            SocketAddress remoteSocketAddress = socket.getRemoteSocketAddress(); // Get the socket address of the remote peer
+
+            // Check socket has socket address
+            if (remoteSocketAddress instanceof InetSocketAddress) {
+                InetAddress address = ((InetSocketAddress) remoteSocketAddress).getAddress(); // Get the address of the remote peer
+
+                this.remoteAddress = String.format("/ip%d/%s/%s/%d/%s", (address instanceof Inet4Address ? 4 : 6), address.getHostAddress(), "tcp", socket.getPort(), Hex.encodeHexString(peerPublicKey.getEncoded())); // Construct a multiaddress
+            } else {
+                this.remoteAddress = ""; // Set the address of the remote peer to an empty string
+            }
+
             return; // Done!
         }
 
@@ -165,6 +199,9 @@ public class TcpSocket implements Connection {
         // Set ciphers to null since SECIO is not supported
         this.cipherOut = null;
         this.cipherIn = null;
+
+        // Set the address of the remote peer
+        this.remoteAddress = "";
     }
 
     /**
@@ -280,5 +317,14 @@ public class TcpSocket implements Connection {
         this.cipherInStream.close(); // Close cipher in stream
 
         this.socket.close(); // Close socket
+    }
+
+    /**
+     * Get the multiaddress of the connected peer.
+     *
+     * @return the multiaddress of the connected peer
+     */
+    public String getRemoteMultiaddress() {
+        return this.remoteAddress; // Return the active remote multiaddress
     }
 }

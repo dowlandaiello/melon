@@ -1,6 +1,8 @@
 package com.dowlandaiello.melon.host;
 
 import com.dowlandaiello.melon.common.CommonTypes;
+import com.dowlandaiello.melon.peerstore.Peerstore;
+import com.dowlandaiello.melon.peerstore.SmolStore;
 import com.dowlandaiello.melon.pubsub.SubscriptionManager;
 import com.dowlandaiello.melon.transport.Tcp;
 import com.dowlandaiello.melon.transport.Transport;
@@ -145,12 +147,18 @@ public class Host {
         public final SubscriptionManager subManager;
 
         /**
+         * The peerstore.
+         */
+        public final Peerstore peerstore;
+
+        /**
          * Initializes a new connection handler.
          *
          * @param subManager the subscription manager to use to handle connections
          */
-        public StandardConnectionHandler(SubscriptionManager subManager) {
+        private StandardConnectionHandler(SubscriptionManager subManager, Peerstore peerstore) {
             this.subManager = subManager; // Set the sub manager
+            this.peerstore = peerstore; // Set the peerstore
         }
 
         /**
@@ -158,6 +166,10 @@ public class Host {
          * @param conn the connection passed into the callback
          */
         public void doCallback(Connection conn) throws ClassNotFoundException, IllegalBlockSizeException, BadPaddingException, IOException {
+            if (conn.getRemoteMultiaddress() != null) {
+                this.peerstore.registerPeer(conn.getRemoteMultiaddress(), conn); // Register the connection
+            }
+
             this.subManager.handleConnection(conn); // Handle the connection
         }
     }
@@ -180,7 +192,17 @@ public class Host {
     /**
      * The general method used to handle incoming connections, regardless of topic.
      */
-    public Transport.Callback connectionHandler;
+    private Transport.Callback connectionHandler;
+
+    /**
+     * The active pubsub subscription manager instance.
+     */
+    public SubscriptionManager pubsub;
+
+    /**
+     * The active peerstore.
+     */
+    public Peerstore peerstore;
 
     /**
      * Initializes a new host, and applies all of the given options.
@@ -198,7 +220,12 @@ public class Host {
         // Initialize a tcp transport to make connections from
         this.transport = new Tcp().withUpgrade(new Secio(this.keypair));
 
-        this.connectionHandler = new StandardConnectionHandler(new SubscriptionManager()); // Set the connection handler to the standard connection handler
+        this.pubsub = new SubscriptionManager(); // Initialize a new subscription manager
+        this.peerstore = new SmolStore(); // Initialize a default peerstore
+
+        this.connectionHandler = new StandardConnectionHandler(this.pubsub, this.peerstore); // Set the connection handler to the standard connection handle
+
+        this.peerstore = new SmolStore(); // Set the peerstore
 
         // Iterate through provided options
         for (Option opt : opts) {
