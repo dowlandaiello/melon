@@ -46,6 +46,15 @@ public class SmolStore implements Peerstore {
     }
 
     /**
+     * Gets a hashmap of registered peers.
+     *
+     * @return the registered peers
+     */
+    public HashMap<String, Connection> getRegisteredPeers() {
+        return this.connections; // Return the registered peers map
+    }
+
+    /**
      * Attempts to find an existing connection to a remote peer. Throws a
      * PeerNotFound exception if the peer does not exist in the peerstore.
      *

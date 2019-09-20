@@ -25,7 +25,8 @@ public class CommonTypes {
          * Represents a message type.
          */
         public enum Type {
-            NEGOTIATION, ESTABLISH_RELAY_LINK,
+            NEGOTIATION,
+            BOOTSTRAP,
         }
 
         /**

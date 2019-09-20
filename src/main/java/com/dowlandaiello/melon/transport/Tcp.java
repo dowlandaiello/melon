@@ -166,6 +166,8 @@ public class Tcp implements Transport {
             ConnectionHandler connHandler = new ConnectionHandler(); // Initialize a new connection handler
             connHandler.start(); // Start the connection handler
         }
+
+        serverSocket.close(); // Close the socket
     }
 
     /**

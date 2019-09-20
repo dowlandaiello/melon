@@ -2,6 +2,8 @@ package com.dowlandaiello.melon.peerstore;
 
 import com.dowlandaiello.melon.transport.connection.Connection;
 
+import java.util.HashMap;
+
 /**
  * Represents a generic, non-persistent virtual storage device.
  *
@@ -24,6 +26,13 @@ public interface Peerstore {
      * @return whether or not the peer exists in the store
      */
     boolean peerExists(String multiaddress);
+
+    /**
+     * Gets a hashmap of registered peers.
+     *
+     * @return the registered peers
+     */
+    HashMap<String, Connection> getRegisteredPeers();
 
     /**
      * Attempts to find an existing connection to a remote peer. Throws a
