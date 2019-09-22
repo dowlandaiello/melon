@@ -1,6 +1,18 @@
 package com.dowlandaiello.melon.peerstore;
 
+import com.dowlandaiello.melon.common.CommonTypes;
+import com.dowlandaiello.melon.transport.Transport;
 import com.dowlandaiello.melon.transport.connection.Connection;
+import org.apache.commons.codec.DecoderException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 import java.util.HashMap;
 
@@ -42,4 +54,11 @@ public interface Peerstore {
      * @return the corresponding connection
      */
     Connection getExistingConnection(String multiaddress) throws StoreException.PeerNotFoundException;
+
+    /**
+     * Attempts to retrieve a copy of the peerstore from a remote peer.
+     *
+     * @param bootstrapPeerAddress the address of the peer to bootstrap from
+     */
+    void bootstrap(String bootstrapPeerAddress, Transport dialer, Key dialingKey) throws StoreException, IOException, NoSuchAlgorithmException, InvalidKeyException, Transport.UnsupportedTransportException, NoSuchPaddingException, CommonTypes.MultiAddress.InvalidMultiAddressException, DecoderException, ClassNotFoundException, InvalidKeySpecException, IllegalBlockSizeException, BadPaddingException;
 }

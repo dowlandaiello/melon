@@ -6,11 +6,20 @@ package com.dowlandaiello.melon.peerstore;
  * @author Dowland Aiello
  * @since 1.0
  */
-public class StoreException {
+public class StoreException extends Exception {
+    /**
+     * Initializes a new StoreException with the given message.
+     *
+     * @param message the message to initialize the StoreException with
+     */
+    public StoreException(String message) {
+        super(message); // Call the exception class initializer
+    }
+
     /**
      * Represents an exception regarding a null multiaddress connection.
      */
-    public static class PeerNotFoundException extends Exception {
+    public static class PeerNotFoundException extends StoreException {
         /**
          * Initializes a new PeerNotFoundException with the given multiaddress.
          *
