@@ -60,11 +60,11 @@ dependency in your `Pom.xml` file:
 
 ```xml
 <!-- Melon P2P -->
-    <dependency>
-      <groupId>melon</groupId>
-      <artifactId>melon</artifactId>
-      <version>1.0.0</version>
-    </dependency>
+<dependency>
+  <groupId>melon</groupId>
+  <artifactId>melon</artifactId>
+  <version>1.0.0</version>
+</dependency>
 ```
 
 Then, feel free to use the standard Melon `Host`, or construct your own using
