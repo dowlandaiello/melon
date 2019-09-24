@@ -220,8 +220,8 @@ public class Host {
         // Initialize a tcp transport to make connections from
         this.transport = new Tcp().withUpgrade(new Secio(this.keypair));
 
-        this.pubsub = new SubscriptionManager(); // Initialize a new subscription manager
         this.peerstore = new SmolStore(); // Initialize a default peerstore
+        this.pubsub = new SubscriptionManager(this.peerstore); // Initialize a new subscription manager
 
         this.connectionHandler = new StandardConnectionHandler(this.pubsub, this.peerstore); // Set the connection handler to the standard connection handle
 

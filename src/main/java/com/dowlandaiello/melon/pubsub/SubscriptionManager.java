@@ -1,11 +1,13 @@
 package com.dowlandaiello.melon.pubsub;
 
+import com.dowlandaiello.melon.peerstore.Peerstore;
 import com.dowlandaiello.melon.transport.connection.Connection;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.stream.IntStream;
 
 /**
  * Represents a collection of subscribed-to classes, and their corresponding
@@ -18,6 +20,20 @@ public class SubscriptionManager {
     private HashMap<String, Handler> handlers;
 
     /**
+     * The peerstore.
+     */
+    private Peerstore peerstore;
+
+    /**
+     * Initializes a new subscription manager with the given peerstore.
+     * 
+     * @param peerstore the store used in conjunction with the subscription manager
+     */
+    public SubscriptionManager(Peerstore peerstore) {
+        this.peerstore = peerstore; // Set the peerstore of the instance
+    }
+
+    /**
      * Subscribes to a given topic.
      *
      * @param topic the topic to subscribe to
@@ -25,6 +41,30 @@ public class SubscriptionManager {
      */
     public void subscribe(String topic, Handler handler) {
         this.handlers.put(topic, handler); // Subscribe to the given topic
+    }
+
+    /**
+     * Publishes a message.
+     *
+     * @param message the message to publish
+     */
+    public void publish(Message message) {
+        HashMap<String, Connection> connections = this.peerstore.getRegisteredPeers(); // Get a hashmap of registered peers
+
+        connections.forEach((k, v) -> {
+            class Publisher extends Thread {
+                public void run() {
+                    try {
+                        v.writeObject(message); // Write the message
+                    } catch (IOException | IllegalBlockSizeException e) {
+                        e.printStackTrace(); // Log an encountered exception
+                    }
+                }
+            }
+
+            Publisher publisher = new Publisher(); // Initialize a new publisher
+            publisher.start(); // Run the publisher
+        }); // Send to each of the connected peers
     }
 
     /**
