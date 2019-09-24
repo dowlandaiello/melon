@@ -8,6 +8,7 @@ import com.dowlandaiello.melon.transport.Tcp;
 import com.dowlandaiello.melon.transport.Transport;
 import com.dowlandaiello.melon.transport.connection.Connection;
 import com.dowlandaiello.melon.transport.secio.Secio;
+import org.apache.commons.codec.binary.Hex;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -219,7 +220,7 @@ public class Host {
     /**
      * The keypair used to derive the peerId of the host.
      */
-    private KeyPair keypair;
+    public KeyPair keypair;
 
     /**
      * The transport used to make connections with other peers.
@@ -271,11 +272,11 @@ public class Host {
     }
 
     /**
-     * Listens on a given multiaddress.
+     * Listens on a given port.
      *
-     * @param multiaddress the multiaddress to listen on
+     * @param port the port to listen on
      */
-    public void listen(String multiaddress) throws CommonTypes.MultiAddress.InvalidMultiAddressException, IOException, ClassNotFoundException, BadPaddingException, IllegalBlockSizeException {
-        this.transport.listen(multiaddress, this.connectionHandler); // Listen
+    public void listen(int inetVersion, int port) throws CommonTypes.MultiAddress.InvalidMultiAddressException, IOException, ClassNotFoundException, BadPaddingException, IllegalBlockSizeException {
+        this.transport.listen(String.format("/ip4/127.0.0.1/tcp/%d/%s", port, Hex.encodeHexString(this.keypair.getPublic().getEncoded())), this.connectionHandler); // Listen
     }
 }

@@ -52,3 +52,112 @@ reconfigured, and built upon to serve a user's needs.
     When a `Host` is initialized, a user might want to, for example, use a
     custom transport for communications. This can be achieved through the use
     of the `TransportOption`.
+
+## Getting Started
+
+To start using the Melon framework in your Java application, add Melon as a
+dependency in your `Pom.xml` file:
+
+```xml
+<!-- Melon P2P -->
+    <dependency>
+      <groupId>melon</groupId>
+      <artifactId>melon</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+```
+
+Then, feel free to use the standard Melon `Host`, or construct your own using
+any of the predefined `Options` (or make your own)!
+
+### Making a New Host
+
+```java
+import com.dowlandaiello.melon.host.Host;
+
+class MelonExample {
+    public myMethod() {
+        Host host = new Host(); // Use the default host options
+    }
+}
+```
+
+### Initializing a new Host with Options
+
+```java
+import com.dowlandaiello.melon.host.Host;
+import com.dowlandaiello.melon.host.Host.TransportOption;
+import com.dowlandaiello.melon.transport.Tcp;
+
+class MelonExample {
+    public myMethod() {
+        Host host = new Host(new TransportOption(new Tcp())); // Initialize a new host with the TCP transport option
+    }
+}
+```
+
+### Starting an Initialized Host
+
+```java
+import com.dowlandaiello.melon.host.Host;
+
+class MelonExample {
+    public myMethod() {
+        Host host = new Host(); // Use the default host options
+        host.listen(3000); // Listen on port 3000
+    }
+}
+```
+
+### Connecting a Host to an Existing Network
+
+```java
+import com.dowlandaiello.melon.host.Host;
+
+class MelonExample {
+    public myMethod() {
+        Host host = new Host(); // Construct the default host
+        host.listen(3000); // Listen on port 3000
+        
+        host.peerstore.bootstrap("/ip4/...", host.transport, host.keypair.getPublic()); // Bootstrap the peerstore from a particular peer
+    }
+}
+```
+
+### Publishing a Message
+
+```java
+import com.dowlandaiello.melon.host.Host;
+import com.dowlandaiello.melon.pubsub.Message;
+
+class MelonExample {
+    public myMethod() {
+        Host host = new Host(); // Construct the default host
+        host.listen(3000); // Listen on port 3000
+        
+        host.peerstore.bootstrap("/ip4/...", host.transport, host.keypair.getPublic()); // Bootstrap the peerstore from a particular peer
+        
+        host.pubsub.publish(new Message("some_topic", new String("You've got mail!"))); // Publish a message
+    }
+}
+```
+
+### Subscribing to a Topic
+
+```java
+import com.dowlandaiello.melon.host.Host;
+import com.dowlandaiello.melon.pubsub.Message;
+
+class MelonExample {
+    public myMethod() {
+        Host host = new Host(); // Construct the default host
+        host.listen(3000); // Listen on port 3000
+        
+        host.peerstore.bootstrap("/ip4/...", host.transport, host.keypair.getPublic()); // Bootstrap the peerstore from a particular peer
+        
+        host.pubsub.subscribe("some_topic", (Message message) -> {
+            System.out.println((String) message.contents); // We've got mail!
+        }); // Subscribe to the some_topic topic
+    }
+}
+```
