@@ -138,18 +138,55 @@ public class Host {
     }
 
     /**
+     * Represents a configuration option used to specify a peerstore for a
+     * given host.
+     *
+     * @author Dowland Aiello
+     * @since 1.0
+     */
+    public static class PeerstoreOption implements Option {
+        /**
+         * The peerstore to use.
+         */
+        private final Peerstore peerstore;
+
+        /**
+         * Initializes a new PeerstoreOption with the given peerstore.
+         *
+         * @param peerstore the peerstore to use
+         */
+        public PeerstoreOption(Peerstore peerstore) {
+            this.peerstore = peerstore; // Set peerstore
+        }
+
+        /**
+         * Applies the option to the given host.
+         *
+         * @param host the host to apply the option to
+         */
+        public void apply(Host host) {
+            host.peerstore = this.peerstore; // Set the peerstore of the host
+
+            // Check the host uses the standard connection handler
+            if (host.connectionHandler instanceof StandardConnectionHandler) {
+                ((StandardConnectionHandler) host.connectionHandler).peerstore = this.peerstore; // Set the peerstore of the connection handler
+            }
+        }
+    }
+
+    /**
      * Represents the standard pubsub-based connection handler.
      */
     public class StandardConnectionHandler implements Transport.Callback {
         /**
          * The subscription manager.
          */
-        public final SubscriptionManager subManager;
+        public SubscriptionManager subManager;
 
         /**
          * The peerstore.
          */
-        public final Peerstore peerstore;
+        public Peerstore peerstore;
 
         /**
          * Initializes a new connection handler.
